@@ -1,1 +1,68 @@
-11
+mode: test
+determinstic: True
+model:
+  name: ClM
+  encoder:
+    name: MedMamba
+    in_channel: 3
+    out_channel: 46
+    point_num: 2048
+    building_block: lg_ssm
+    num_neighbors_k: 32
+    num_fps_points: [1024, 512, 256, 128]
+    fps_feature_channels: [64, 128, 256, 512]
+    neighbor_radius: [0.1, 0.2, 0.4, 0.8]
+    dense_channels: [1024, 512, 256]
+    activation: lrelu
+    normalization: group
+    long_range_modeling: True
+    scan_strategies: [{name: mds, use_feat: true, hidden_dim: 64, alpha: 0.2, num_scales: 3}]
+    sorted_query: True
+    flip_scan: False
+    pos_embedding: True
+    knn_query: xyz
+    final_concat: True
+    channel_attention: eca
+    use_rpe: True
+    use_multiscale_scan: True
+    multiscale_k: [8, 16, 32]
+    use_nc_spi: True
+    nc_spi_num_prompts: 16
+    nc_spi_rank: 48
+    nc_spi_temperature: 1.0
+  classification_losses: 
+    - name: CE
+loader:
+  dataset: 
+    name: PcdClsDataset
+    data_suffix: .ply
+    cls_label: MedPointS
+
+  data_path_list: 
+    - /home/zhaosong/PointCloud/flemme-main/data/MedPointS/classification/fold5
+  batch_size: 48
+  num_workers: 8
+  shuffle: true
+  data_transforms:
+    - name: Normalize
+      method: mean
+    - name: FixedPoints
+      num: 2048
+    - name: ToTensor
+  class_label_transforms:
+    - name: Relabel
+      offset: -1
+    - name: ToOneHot
+      num_classes: 46
+    - name: ToTensor
+model_path: outputs/MedMamba_CLS/ckp_best_score.pth
+
+evaluation_metrics:
+  cls:
+    - name: ACC
+tsne_visualization: 
+  top_n: 10
+  title: t-SNE Visualization of Top-10 Classes
+  vis_dim: 2
+  #label_names: medshapenet
+  label_names: MedPointS
