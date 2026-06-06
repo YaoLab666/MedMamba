@@ -1,1 +1,72 @@
-11
+mode: test
+determinstic: True
+model:
+  name: SeM
+  encoder:
+    name: MedMamba
+    in_channel: 3
+    out_channel: 46
+    point_num: 4096
+    building_block: lg_ssm
+    num_neighbors_k: 32
+    num_fps_points: [2048, 1024, 512, 256]
+    fps_feature_channels: [64, 128, 256, 512]
+    neighbor_radius: [0.1, 0.2, 0.4, 0.8]
+    fp_channels: [512, 256, 128, 64]
+    dense_channels: [1024]
+    activation: lrelu
+    normalization: group
+    long_range_modeling: True
+    scan_strategies: [{name: mds, use_feat: true, hidden_dim: 64, alpha: 0.2, num_scales: 3}]
+    sorted_query: True
+    flip_scan: False
+    pos_embedding: True
+    knn_query: xyz
+    final_concat: True
+    channel_attention: eca
+    use_rpe: True
+    use_multiscale_scan: True
+    multiscale_k: [8, 16, 32]
+    use_nc_spi: True
+    nc_spi_num_prompts: 32
+    nc_spi_rank: 48
+    nc_spi_temperature: 1.0
+  segmentation_losses:
+    - name: Dice
+      normalization: softmax
+    - name: CE
+loader:
+  dataset: 
+    name: PcdSegDataset
+    data_dir: pcd
+    label_dir: coarse_label
+    data_suffix: .ply
+    label_suffix: .seg
+  data_path_list: 
+    - /home/zhaosong/PointCloud/flemme-main/data/MedPointS/segmentation/fold5
+  batch_size: 16
+  num_workers: 8
+  shuffle: false
+  data_transforms:
+    - name: Normalize
+      method: mean
+    - name: FixedPoints
+      num: 4096
+    - name: ToTensor
+  label_transforms:
+    - name: FixedPoints
+      num: 4096
+    - name: Relabel
+      offset: -1
+    - name: ToOneHot
+      num_classes: 46
+    - name: ToTensor
+model_path: outputs/MedMamba_SEG/ckp_best_score.pth
+seg_dir: outputs/MedMamba_SEG/seg
+save_colorized: true
+save_target: true
+evaluation_metrics:
+  seg:
+    - name: mIoU
+    - name: Dice
+    - name: SoftDice

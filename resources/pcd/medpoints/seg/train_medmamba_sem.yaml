@@ -1,0 +1,123 @@
+mode: train
+model:
+  name: SeM
+  encoder:
+    name: MedMamba
+    in_channel: 3
+    out_channel: 46
+    point_num: 4096
+    building_block: lg_ssm
+    num_neighbors_k: 32
+    num_fps_points: [2048, 1024, 512, 256]
+    fps_feature_channels: [64, 128, 256, 512]
+    neighbor_radius: [0.1, 0.2, 0.4, 0.8]
+    fp_channels: [512, 256, 128, 64]
+    dense_channels: [1024]
+    activation: lrelu
+    normalization: group
+    long_range_modeling: True
+    scan_strategies: [{name: mds, use_feat: true, hidden_dim: 64, alpha: 0.2, num_scales: 3}]
+    sorted_query: True
+    flip_scan: False
+    pos_embedding: True
+    knn_query: xyz
+    final_concat: True
+    channel_attention: eca
+    use_rpe: True
+    use_multiscale_scan: True
+    multiscale_k: [8, 16, 32]
+    use_nc_spi: True
+    nc_spi_num_prompts: 32
+    nc_spi_rank: 48
+    nc_spi_temperature: 1.0
+  segmentation_losses:
+    - name: Dice
+      normalization: softmax
+    - name: CE
+loader:
+  dataset: 
+    name: PcdSegDataset
+    data_dir: pcd
+    label_dir: coarse_label
+    data_suffix: .ply
+    label_suffix: .seg
+  data_path_list: 
+    - /home/zhaosong/PointCloud/flemme-main/data/MedPointS/segmentation/fold1
+    - /home/zhaosong/PointCloud/flemme-main/data/MedPointS/segmentation/fold2
+    - /home/zhaosong/PointCloud/flemme-main/data/MedPointS/segmentation/fold3
+  batch_size: 2
+  num_workers: 8
+  shuffle: true
+  data_transforms:
+    - name: Normalize
+      method: mean
+    - name: FixedPoints
+      num: 4096
+    - name: ToTensor
+    - name: RandomRotate
+      degrees: [-180, 180]
+      axis: 0
+    - name: RandomRotate
+      degrees: [-180, 180]
+      axis: 1
+    - name: RandomRotate
+      degrees: [-180, 180]
+      axis: 2
+    - name: RandomScale
+      scales: [0.8, 1.2]
+    - name: RandomTranslate
+      translate: 0.1
+    - name: AddNoise
+      std: 0.01
+  label_transforms:
+    - name: FixedPoints
+      num: 4096
+    - name: Relabel
+      offset: -1
+    - name: ToOneHot
+      num_classes: 46
+    - name: ToTensor
+val_loader:
+  dataset: 
+    name: PcdSegDataset
+    data_dir: pcd
+    label_dir: coarse_label
+    data_suffix: .ply
+    label_suffix: .seg
+  data_path_list: 
+    - /home/zhaosong/PointCloud/flemme-main/data/MedPointS/segmentation/fold4
+  batch_size: 8
+  num_workers: 8
+  shuffle: true
+  data_transforms:
+    - name: Normalize
+      method: mean
+    - name: FixedPoints
+      num: 4096
+    - name: ToTensor
+  label_transforms:
+    - name: FixedPoints
+      num: 4096
+    - name: Relabel
+      offset: -1
+    - name: ToOneHot
+      num_classes: 46
+    - name: ToTensor
+check_point_dir: outputs/MedMamba_SEG
+resume: False
+optimizer:
+  name: Adam
+  lr: 0.0001
+  weight_decay: 0.00000001
+evaluation_metrics:
+  seg:
+    - name: mIoU
+score_metric:
+  name: mIoU
+lr_scheduler: 
+  name: LinearLR
+  start_factor: 1.0
+  end_factor: 0.01
+max_epoch: 200
+write_after_iters: 20
+save_after_epochs: 2
