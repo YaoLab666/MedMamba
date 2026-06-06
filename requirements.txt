@@ -1,0 +1,45 @@
+# Install PyTorch for the target CUDA version before installing this file.
+# Tested environment:
+#   torch==2.1.1
+#   torchvision==0.16.1
+#   torchaudio==2.1.1
+#   CUDA 11.8
+#
+# Example:
+# pip install torch==2.1.1 torchvision==0.16.1 torchaudio==2.1.1 \
+#   --index-url https://download.pytorch.org/whl/cu118
+
+# Build tools for the local point-cloud, Chamfer distance, and EMD extensions.
+setuptools>=68.0
+wheel>=0.41
+ninja>=1.11
+packaging>=23.1
+
+# Core numerical and configuration dependencies.
+numpy>=1.24,<2.0
+scipy>=1.10,<1.12
+PyYAML>=6.0
+einops>=0.7,<0.9
+
+# Training, metrics, logging, and visualization.
+matplotlib>=3.7,<3.9
+Pillow>=9.5
+scikit-image>=0.21,<0.23
+scikit-learn>=1.2,<1.5
+joblib>=1.2
+tensorboard>=2.13
+tqdm>=4.65
+
+# Point-cloud data, sampling, optimal transport, and mesh processing.
+POT>=0.9.3
+plyfile>=1.0
+fpsample>=0.3.3
+geomloss>=0.2.6
+trimesh>=4.0
+
+# Optional acceleration packages are intentionally not installed here:
+# - KNN-CUDA: https://github.com/unlimblue/KNN_CUDA
+# - mamba-ssm and causal-conv1d
+#
+# MedMamba imports its Mamba implementation from flemme/CustomMamba.py and
+# provides PyTorch fallbacks when the optional Mamba kernels are unavailable.
