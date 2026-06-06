@@ -1,5 +1,4 @@
-mode: test
-determinstic: True
+mode: train
 model:
   name: AE
   encoder:
@@ -60,11 +59,14 @@ loader:
     data_suffix: .ply
     target_suffix: .ply
     cls_label: MedPointS
+
   data_path_list: 
-    - /home/zhaosong/PointCloud/flemme-main/data/MedPointS/completion/fold5
-  batch_size: 24
+    - /home/zhaosong/PointCloud/flemme-main/data/MedPointS/completion/fold1
+    - /home/zhaosong/PointCloud/flemme-main/data/MedPointS/completion/fold2
+    - /home/zhaosong/PointCloud/flemme-main/data/MedPointS/completion/fold3
+  batch_size: 2
   num_workers: 8
-  shuffle: false
+  shuffle: true
   data_transforms:
     - name: Normalize
       method: mean
@@ -83,15 +85,53 @@ loader:
     - name: ToOneHot
       num_classes: 46
     - name: ToTensor
-
-model_path: outputs/MedMamba_CPL/ckp_best_score.pth
-recon_dir: outputs/MedMamba_CPL/recon
-save_input: true
-save_target: true
-eval_batch_num: 10
+val_loader:
+  dataset: 
+    name: PcdReconWithClassLabelDataset
+    data_dir: partial
+    target_dir: target
+    data_suffix: .ply
+    target_suffix: .ply
+    cls_label: MedPointS
+  data_path_list: 
+    - /home/zhaosong/PointCloud/flemme-main/data/MedPointS/completion/fold4
+  batch_size: 8
+  num_workers: 8
+  shuffle: true
+  data_transforms:
+    - name: Normalize
+      method: mean
+    - name: FixedPoints
+      num: 2048
+    - name: ToTensor
+  target_transforms:
+    - name: Normalize
+      method: mean
+    - name: FixedPoints
+      num: 2048
+    - name: ToTensor
+  class_label_transforms:
+    - name: Relabel
+      offset: -1
+    - name: ToOneHot
+      num_classes: 46
+    - name: ToTensor
+check_point_dir: outputs/MedMamba_CPL
+resume: False
+optimizer:
+  name: Adam
+  lr: 0.0001
+  weight_decay: 0.00000001
 evaluation_metrics:
   recon:
     - name: CD
-    - name: EMD
-      reg: 1.0
-      method: greenkhorn
+score_metric:
+  name: CD
+  higher_is_better: false
+lr_scheduler: 
+  name: LinearLR
+  start_factor: 1.0
+  end_factor: 0.01
+max_epoch: 200
+write_after_iters: 20
+save_after_epochs: 2
